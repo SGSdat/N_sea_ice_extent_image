@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NSIDC Image of the Day</title>
+    <title>NSIDC Image of the Previous Day</title>
 </head>
 <body>
     <h1>NSIDC Image of the Previous Day</h1>
     <img id="seaIceImage" src="" alt="Sea Ice Image" />
-    
+
     <script>
         // Get yesterday's date
         const yesterday = new Date();
@@ -18,8 +18,15 @@
         const month = String(yesterday.getMonth() + 1).padStart(2, '0'); // Month is 0-indexed
         const day = String(yesterday.getDate()).padStart(2, '0');
 
+        // Create month abbreviation manually
+        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        const monthAbbr = months[yesterday.getMonth()];
+
         // Format the URL for yesterday's image
-        const imageUrl = `https://noaadata.apps.nsidc.org/NOAA/G02135/north/daily/images/${year}/${month}_${yesterday.toLocaleString('default', { month: 'short' })}/N_${year}${month}${day}_extn_v3.0.png`;
+        const imageUrl = `https://noaadata.apps.nsidc.org/NOAA/G02135/north/daily/images/${year}/${month}_${monthAbbr}/N_${year}${month}${day}_extn_v3.0.png`;
+
+        // Log the URL to check if it is correct
+        console.log(imageUrl);  // You can remove this line after testing
 
         // Set the image source to the dynamic URL
         document.getElementById("seaIceImage").src = imageUrl;
