@@ -17,6 +17,8 @@
     <p id="status">Loading image...</p>
 
     <script>
+        console.log("✅ Option 1 image loader is active");
+
         const maxDaysBack = 7;
         const imageElement = document.getElementById("seaIceImage");
         const statusElement = document.getElementById("status");
@@ -34,6 +36,7 @@
         function tryLoadImage(daysAgo = 1) {
             if (daysAgo > maxDaysBack) {
                 statusElement.textContent = `No image found in the last ${maxDaysBack} days.`;
+                console.warn("No valid image found in allowed date range.");
                 return;
             }
 
@@ -43,13 +46,16 @@
 
             const imageUrl = `https://noaadata.apps.nsidc.org/NOAA/G02135/north/daily/images/${year}/${month}_${monthAbbr}/N_${year}${month}${day}_extn_v4.0.png`;
 
+            console.log(`🔍 Trying: ${imageUrl}`);
+
             const testImage = new Image();
             testImage.onload = () => {
+                console.log(`✅ Found image for ${year}-${month}-${day}`);
                 imageElement.src = imageUrl;
                 statusElement.textContent = `Showing image from ${year}-${month}-${day}`;
             };
             testImage.onerror = () => {
-                console.log(`Image not found for ${year}-${month}-${day}, trying previous day...`);
+                console.warn(`❌ Image not found for ${year}-${month}-${day}, trying previous day...`);
                 tryLoadImage(daysAgo + 1);
             };
             testImage.src = imageUrl;
