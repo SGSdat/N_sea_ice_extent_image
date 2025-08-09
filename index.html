@@ -1,33 +1,50 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sea Ice Image</title>
+  <style>
+    #seaIceImage {
+      max-width: 100%;
+      height: auto;
+    }
+  </style>
 </head>
 <body>
-    <img id="seaIceImage" src="" alt="Sea Ice Image" />
-    
-    <script>
-        // Get yesterday's date
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1); // Subtract one day from today's date
+  <h1>Sea Ice Extent Image (Yesterday)</h1>
+  <img id="seaIceImage" src="" alt="Sea Ice Image" />
+  <p id="message"></p>
 
-        const year = yesterday.getFullYear();
-        const month = String(yesterday.getMonth() + 1).padStart(2, '0'); // Month is 0-indexed
-        const day = String(yesterday.getDate()).padStart(2, '0');
+  <script>
+    // Get yesterday's date
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
 
-        // Create month abbreviation manually
-        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-        const monthAbbr = months[yesterday.getMonth()];
+    const year = yesterday.getFullYear();
+    const month = String(yesterday.getMonth() + 1).padStart(2, '0');
+    const day = String(yesterday.getDate()).padStart(2, '0');
 
-        // Format the URL for yesterday's image
-        const imageUrl = `https://noaadata.apps.nsidc.org/NOAA/G02135/north/daily/images/${year}/${month}_${monthAbbr}/N_${year}${month}${day}_extn_v3.0.png`;
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const monthAbbr = months[yesterday.getMonth()];
 
-        // Log the URL to check if it is correct
-        console.log(imageUrl);  // You can remove this line after testing
+    const imageUrl = `https://noaadata.apps.nsidc.org/NOAA/G02135/north/daily/images/${year}/${month}_${monthAbbr}/N_${year}${month}${day}_extn_v3.0.png`;
 
-        // Set the image source to the dynamic URL
-        document.getElementById("seaIceImage").src = imageUrl;
-    </script>
+    // Attempt to load the image and handle if it fails
+    const img = document.getElementById("seaIceImage");
+    const msg = document.getElementById("message");
+
+    img.onload = () => {
+      console.log("Image loaded successfully:", imageUrl);
+    };
+
+    img.onerror = () => {
+      msg.textContent = "Sea Ice image for yesterday is not available yet.";
+      img.style.display = "none"; // Hide broken image
+      console.warn("Image failed to load:", imageUrl);
+    };
+
+    img.src = imageUrl;
+  </script>
 </body>
 </html>
