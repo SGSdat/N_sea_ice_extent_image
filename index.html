@@ -1,86 +1,174 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <title>Sea Ice Image</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <style>
-        img {
-            max-width: 100%;
-            height: auto;
-        }
-        #tryAgainBtn {
-            margin-top: 1em;
-            padding: 0.5em 1em;
-            font-size: 1rem;
-        }
-        #lastUrl {
-            font-family: monospace;
-            margin-top: 0.5em;
-            word-break: break-all;
-            color: #555;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <title>Sea Ice Image</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    img {
+      max-width: 100%;
+      height: auto;
+    }
+    #tryAgainBtn {
+      margin-top: 1em;
+      padding: 0.5em 1em;
+      font-size: 1rem;
+    }
+    #lastUrl {
+      font-family: monospace;
+      margin-top: 0.5em;
+      word-break: break-all;
+      color: #555;
+    }
+    #spinner {
+      display: inline-block;
+      width: 24px;
+      height: 24px;
+      border: 3px solid #ccc;
+      border-top-color: #333;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      vertical-align: middle;
+      margin-left: 8px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    #thumbnailContainer {
+      margin-top: 1em;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    #thumbnailContainer img {
+      width: 100px;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: border-color 0.3s;
+    }
+    #thumbnailContainer img:hover {
+      border-color: #007acc;
+    }
+  </style>
 </head>
 <body>
-    <h1>Latest Available Sea Ice Image</h1>
-    <img id="seaIceImage" src="" alt="Sea Ice Image" />
-    <p id="status">Loading image...</p>
-    <p id="lastUrl"></p>
-    <button id="tryAgainBtn">Try Again</button>
+  <h1>Latest Available Sea Ice Image</h1>
+  <img id="seaIceImage" src="" alt="Sea Ice Image" />
+  <p id="status">Loading image...<span id="spinner"></span></p>
+  <p id="lastUrl"></p>
+  <button id="tryAgainBtn">Try Again</button>
 
-    <script>
-        const maxDaysBack = 7;
-        const imageElement = document.getElementById("seaIceImage");
-        const statusElement = document.getElementById("status");
-        const lastUrlElement = document.getElementById("lastUrl");
-        const tryAgainBtn = document.getElementById("tryAgainBtn");
+  <div id="thumbnailContainer" aria-label="Available sea ice images thumbnails"></div>
 
-        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  <script>
+    let maxDaysBack = 7;          // initial search range
+    const maxSearchLimit = 30;    // max days back to search when auto-incrementing
+    const imageElement = document.getElementById("seaIceImage");
+    const statusElement = document.getElementById("status");
+    const lastUrlElement = document.getElementById("lastUrl");
+    const tryAgainBtn = document.getElementById("tryAgainBtn");
+    const spinner = document.getElementById("spinner");
+    const thumbnailContainer = document.getElementById("thumbnailContainer");
 
-        function formatDate(date) {
-            const year = date.getFullYear();
-            const month = String(date.getMonth() + 1).padStart(2, "0");
-            const day = String(date.getDate()).padStart(2, "0");
-            const monthAbbr = months[date.getMonth()];
-            return { year, month, day, monthAbbr };
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+    function formatDate(date) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      const monthAbbr = months[date.getMonth()];
+      return { year, month, day, monthAbbr };
+    }
+
+    // Show/hide spinner
+    function showSpinner(show) {
+      spinner.style.display = show ? "inline-block" : "none";
+    }
+
+    // Load a single image, returns a Promise that resolves if image loads, rejects if error
+    function loadImage(url) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(url);
+        img.onerror = () => reject(url);
+        img.src = url;
+      });
+    }
+
+    // Try loading images from daysAgoStart to daysAgoEnd, returns all successful URLs
+    async function findAvailableImages(daysAgoStart, daysAgoEnd) {
+      let foundUrls = [];
+      for (let daysAgo = daysAgoStart; daysAgo <= daysAgoEnd; daysAgo++) {
+        const date = new Date();
+        date.setDate(date.getDate() - daysAgo);
+        const { year, month, day, monthAbbr } = formatDate(date);
+        const url = `https://noaadata.apps.nsidc.org/NOAA/G02135/north/daily/images/${year}/${month}_${monthAbbr}/N_${year}${month}${day}_extn_v4.0.png`;
+        lastUrlElement.textContent = `Last tried URL: ${url}`;
+        try {
+          await loadImage(url);
+          foundUrls.push({ url, dateStr: `${year}-${month}-${day}` });
+          console.log(`✅ Found image for ${year}-${month}-${day}`);
+        } catch {
+          console.log(`❌ Image not found for ${year}-${month}-${day}`);
         }
+      }
+      return foundUrls;
+    }
 
-        function tryLoadImage(daysAgo = 1) {
-            if (daysAgo > maxDaysBack) {
-                statusElement.textContent = `No image found in the last ${maxDaysBack} days.`;
-                lastUrlElement.textContent = "";
-                imageElement.src = "";
-                return;
-            }
+    async function tryLoadLatestImage(daysAgoStart = 1, searchRange = maxDaysBack) {
+      showSpinner(true);
+      statusElement.textContent = "Loading image...";
 
-            const date = new Date();
-            date.setDate(date.getDate() - daysAgo);
-            const { year, month, day, monthAbbr } = formatDate(date);
+      const foundImages = await findAvailableImages(daysAgoStart, daysAgoStart + searchRange - 1);
 
-            const imageUrl = `https://noaadata.apps.nsidc.org/NOAA/G02135/north/daily/images/${year}/${month}_${monthAbbr}/N_${year}${month}${day}_extn_v4.0.png`;
-            console.log(`Trying URL: ${imageUrl}`);
-            lastUrlElement.textContent = `Last tried URL: ${imageUrl}`;
-
-            const testImage = new Image();
-            testImage.onload = () => {
-                imageElement.src = imageUrl;
-                statusElement.textContent = `Showing image from ${year}-${month}-${day}`;
-            };
-            testImage.onerror = () => {
-                console.log(`Image not found for ${year}-${month}-${day}, trying previous day...`);
-                tryLoadImage(daysAgo + 1);
-            };
-            testImage.src = imageUrl;
+      if (foundImages.length > 0) {
+        // Sort by newest date (smallest daysAgo)
+        foundImages.sort((a, b) => b.dateStr.localeCompare(a.dateStr));
+        const latest = foundImages[0];
+        imageElement.src = latest.url;
+        statusElement.textContent = `Showing image from ${latest.dateStr}`;
+        lastUrlElement.textContent = `Last tried URL: ${latest.url}`;
+        updateThumbnails(foundImages);
+      } else {
+        // No images found in this range
+        if (searchRange < maxSearchLimit) {
+          // Increase search range and try again automatically
+          maxDaysBack = Math.min(searchRange + 7, maxSearchLimit);
+          console.log(`No images found in last ${searchRange} days, increasing search range to ${maxDaysBack} and retrying...`);
+          tryLoadLatestImage(daysAgoStart, maxDaysBack);
+        } else {
+          statusElement.textContent = `No image found in the last ${maxSearchLimit} days.`;
+          lastUrlElement.textContent = "";
+          imageElement.src = "";
+          thumbnailContainer.innerHTML = "";
         }
+      }
+      showSpinner(false);
+    }
 
-        tryAgainBtn.addEventListener("click", () => {
-            statusElement.textContent = "Loading image...";
-            tryLoadImage(1);
+    function updateThumbnails(images) {
+      thumbnailContainer.innerHTML = "";
+      images.forEach(({ url, dateStr }) => {
+        const thumb = document.createElement("img");
+        thumb.src = url;
+        thumb.alt = `Sea ice image for ${dateStr}`;
+        thumb.title = `Sea ice image for ${dateStr}`;
+        thumb.addEventListener("click", () => {
+          imageElement.src = url;
+          statusElement.textContent = `Showing image from ${dateStr}`;
+          lastUrlElement.textContent = `Last tried URL: ${url}`;
         });
+        thumbnailContainer.appendChild(thumb);
+      });
+    }
 
-        // Start checking from yesterday automatically on page load
-        tryLoadImage(1);
-    </script>
+    tryAgainBtn.addEventListener("click", () => {
+      maxDaysBack = 7; // reset search range on manual retry
+      tryLoadLatestImage(1, maxDaysBack);
+    });
+
+    // Start automatically from yesterday
+    tryLoadLatestImage(1, maxDaysBack);
+  </script>
 </body>
 </html>
