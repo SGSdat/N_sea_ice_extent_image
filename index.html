@@ -17,7 +17,7 @@
     <p id="status">Loading image...</p>
 
     <script>
-        const maxDaysBack = 7;
+        const maxDaysBack = 30;
         const imageElement = document.getElementById("seaIceImage");
         const statusElement = document.getElementById("status");
 
@@ -57,7 +57,7 @@
         }
 
         // Start checking from yesterday
-        tryLoadImage(15);
+        tryLoadImage(1);
     </script>
 </body>
 </html>
