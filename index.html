@@ -17,7 +17,7 @@
     <p id="status">Loading image...</p>
 
     <script>
-        const maxDaysBack = 7; // How far back to try
+        const maxDaysBack = 7;
         const imageElement = document.getElementById("seaIceImage");
         const statusElement = document.getElementById("status");
 
@@ -31,35 +31,33 @@
             return { year, month, day, monthAbbr };
         }
 
-        async function tryLoadImage(daysAgo = 0) {
+        function tryLoadImage(daysAgo = 1) {
             if (daysAgo > maxDaysBack) {
                 statusElement.textContent = `No image found in the last ${maxDaysBack} days.`;
                 return;
             }
 
             const date = new Date();
-            date.setDate(date.getDate() - daysAgo);
+            date.setDate(date.getDate() - daysAgo); // Ensure we're not using today
             const { year, month, day, monthAbbr } = formatDate(date);
 
             const imageUrl = `https://noaadata.apps.nsidc.org/NOAA/G02135/north/daily/images/${year}/${month}_${monthAbbr}/N_${year}${month}${day}_extn_v4.0.png`;
+            console.log(`Trying URL: ${imageUrl}`);
 
-            try {
-                const response = await fetch(imageUrl, { method: 'HEAD' });
-
-                if (response.ok) {
-                    imageElement.src = imageUrl;
-                    statusElement.textContent = `Showing image from ${year}-${month}-${day}`;
-                } else {
-                    console.log(`Image not found for ${year}-${month}-${day}, trying previous day...`);
-                    tryLoadImage(daysAgo + 1);
-                }
-            } catch (error) {
-                console.error("Error checking image:", error);
-                statusElement.textContent = "Error loading image.";
-            }
+            const testImage = new Image();
+            testImage.onload = () => {
+                imageElement.src = imageUrl;
+                statusElement.textContent = `Showing image from ${year}-${month}-${day}`;
+            };
+            testImage.onerror = () => {
+                console.log(`Image not found for ${year}-${month}-${day}, trying previous day...`);
+                tryLoadImage(daysAgo + 1);
+            };
+            testImage.src = imageUrl;
         }
 
-        tryLoadImage();
+        // Start checking from yesterday
+        tryLoadImage(1);
     </script>
 </body>
 </html>
